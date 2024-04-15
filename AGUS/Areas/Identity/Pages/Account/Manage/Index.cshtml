@@ -1,0 +1,77 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Thông tin cá nhân";
+    ViewData["ActivePage"] = ManageNavPages.Index;
+}
+
+<h3>@ViewData["Title"]</h3>
+<partial name="_StatusMessage" for="StatusMessage" />
+<div class="row">
+    <div class="col-md-6">
+        <form id="profile-form" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+            <div class="form-floating mb-3">
+                <input asp-for="Username" class="form-control" placeholder="Please choose your username." disabled />
+                <label asp-for="Username" class="form-label"></label>
+            </div>
+            <div class="form-floating mb-3">
+                <input asp-for="Input.PhoneNumber" class="form-control" placeholder="Số điện thoại..."/>
+                <label asp-for="Input.PhoneNumber" class="form-label"></label>
+                <span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>
+            </div>
+            <button id="update-profile-button" type="submit" class="w-100 btn btn-outline-info">Lưu</button>
+        </form>
+    </div>
+    <div class="col-md-6 align-content-center">
+        <form id="upload-form" method="post" enctype="multipart/form-data" asp-action="UploadAvatar" asp-controller="users">
+            <input type="hidden" name="UserId" value="@Model.Input.UserId" />
+            <div class="form-floating mb-3">
+                @if(Model.Input.Avt == null)
+                {
+                    <img id="image-preview" class="img-fluid mt-2 rounded-circle" style="width: 100px; height: 100px; object-fit: cover;" alt="Avt" src="~/images/avt/avatar.jpg">
+                }
+                else
+                {
+                    <img id="image-preview" class="img-fluid mt-2 rounded-circle" style="width: 100px; height: 100px; object-fit: cover;" alt="Avt" src="~/images/avt/@Model.Input.Avt">
+                }
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-control mb-4">
+                        <input type="file" id="image-input" name="file" accept=".png, .jpg, .jpeg" onchange="previewImage()" >
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-floating mb-2">
+                        <button id="update-profile-button" type="submit" class="w-100 btn  btn-info">Upload</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input for selecting an image file -->
+            <!-- Submit button -->
+        </form>
+    </div>
+
+    <script>
+        function previewImage() {
+            var input = document.getElementById('image-input');
+            var preview = document.getElementById('image-preview');
+
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+
+                reader.onload = function (e) {
+                    preview.src = e.target.result;
+                };
+
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

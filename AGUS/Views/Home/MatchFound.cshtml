@@ -1,0 +1,146 @@
+﻿@{
+    ViewData["Title"] = "Finding...";
+}
+
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Kiểm tra xem trình duyệt có hỗ trợ navigator.getUserMedia hay không
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            // Yêu cầu quyền truy cập camera và microphone
+            navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+                .then(function (stream) {
+                    console.log('Quyền truy cập được cấp!');
+                    // Nếu cần sử dụng stream, bạn có thể làm điều gì đó ở đây
+                })
+                .catch(function (error) {
+                    console.error('Lỗi khi yêu cầu quyền truy cập:', error);
+                });
+        } else {
+            console.error('Trình duyệt không hỗ trợ getUserMedia.');
+        }
+    });
+</script>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <!-- 
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="name" class="form-label">Tên của bạn:</label>
+                <input type="text" class="form-control" id="name" placeholder="Nhập tên của bạn...">
+            </div>
+        </div>
+        -->
+
+        <div class="col-md-4">
+            <div class="mb-3">
+                <label for="sex" class="form-label text-info">Đối tượng bạn đang muốn tìm kiếm?</label>
+                <select class="form-select" id="sex">
+                    <option value="nam">Nam</option>
+                    <option value="nu">Nữ</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thêm HTML cho vòng tròn load và text -->
+    <div id="loadingDiv" style="display: none;" class="text-center">
+        <p>Đang tìm...</p>
+        <div class="loader"></div>
+        <button id="cancelButton"  class="btn btn-outline-danger mt-3"><i class="bi bi-x-circle"></i></button>
+    </div>
+    <div class="text-center">
+        <p class="text-center text-danger" id="live">Đang online: </p>
+    </div>
+    <div class="text-center">
+        <button onclick="startSearch(document.getElementById('sex').value,'')" class="btn btn-success">Tìm kiếm</button>
+    </div>
+</div>
+
+<!-- Thêm mã script SignalR và jQuery (nếu chưa có) -->
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script src="~/js/signalr/dist/browser/signalr.min.js"></script>
+<script src="~/js/signalr/dist/browser/signalr.js"></script>
+<script>
+    // Kết nối tới signalR
+    var connection = new signalR.HubConnectionBuilder()
+        .withUrl("/videocall")
+        .build();
+
+        const startSignalR = async () => {
+            await connection.start();
+
+        }
+        // Gọi hàm JoinQueue khi bấm nút "Tìm kiếm người ấy"
+        async function startSearch(gender, name) {
+            if (connection.state !== "Connected") {
+                // Nếu kết nối chưa được thiết lập, hãy thiết lập nó trước khi gọi hàm
+                await startConnection();
+            }
+            // Gọi hàm JoinQueue khi kết nối đã được thiết lập
+            // Hiển thị vòng tròn load trước khi gửi và ẩn sau khi gửi thành công
+            var loadingDiv = document.getElementById('loadingDiv');
+
+            loadingDiv.style.display = 'flex'; // Hiển thị vòng tròn load
+
+            await connection.invoke("JoinQueue", gender, name).then(function () {
+                // Xử lý khi gửi thành công (có thể thêm các bước xử lý khác ở đây)
+            }).catch(function (err) {
+                console.error(err.toString());
+            }).finally(function () {
+                
+            });
+            // Đợi 15 giây rồi kiểm tra nếu chưa ghép đôi thành công
+            setTimeout(async function () {
+                try {
+                    // Gửi yêu cầu rời khỏi hàng đợi
+                    await connection.invoke("LeaveQueue");
+
+                    // Nếu vẫn đang hiển thị vòng tròn loading, tức là chưa ghép đôi thành công
+                    if (loadingDiv.style.display === 'flex') {
+                        // Đóng vòng tròn loading
+                        loadingDiv.style.display = 'none';
+
+                        // Hiển thị thông báo toast
+                        toastr.warning('Hệ thống chưa tìm thấy người bạn phù hợp. Vui lòng tìm kiếm lại...', 'Thông báo', {
+                            closeButton: true,
+                            progressBar: true,
+                            positionClass: 'toast-top-right',
+                            timeOut: 4000 // Thời gian hiển thị toast (ms)
+                        });
+                    }
+                } catch (err) {
+                    console.error(err.toString());
+                }
+            }, 10000);
+        }
+
+        // Hàm để ẩn vòng tròn load
+        function hideLoading() {
+            document.getElementById('loadingDiv').style.display = 'none';
+        }
+        // Xử lý sự kiện khi click vào nút "Hủy"
+        document.getElementById('cancelButton').addEventListener('click', async function () {
+            hideLoading();
+            try {
+                await connection.invoke("LeaveQueue");
+                // Xử lý khi gửi thành công (có thể thêm các bước xử lý khác ở đây)
+            } catch (err) {
+                console.error(err.toString());
+            } finally {
+                // Các bước xử lý sau khi invoke hoặc xử lý khi gửi thành công hoặc thất bại
+            }
+        });
+
+        startSignalR();
+        connection.on('MatchFound', function (roomId) {
+            window.location.href = `/${roomId}`;
+        });
+        connection.on('online-live', function (number) {
+            var live = document.getElementById('live');
+            live.textContent =`Đang Online ${number}`;
+        });
+
+
+</script>
+

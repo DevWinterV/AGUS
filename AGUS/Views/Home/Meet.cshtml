@@ -1,0 +1,777 @@
+﻿@{
+    ViewData["Title"] = "Meetting ";
+}
+<style>
+    .video-grid {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        margin: 2px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        border-radius: 5px;
+    }
+
+        .video-grid video {
+            width: calc(33.33% - 4px);
+            max-width: none;
+            margin: 2px;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+            transition: width 0.3s, height 0.3s, z-index 0.3s;
+            cursor: pointer;
+        }
+        .video-grid video,
+        .video-grid video.fullscreen {
+            transition: width 0.3s, height 0.3s, z-index 0.3s;
+        }
+        .video-grid video.fullscreen {
+            width: 100%;
+            height: auto; /* Adjusted to maintain the aspect ratio */
+        }
+
+
+    .chat-container {
+        width: 100%;
+        height: 200px;
+        margin: 2px;
+        background-color: #f0f0f0;
+        position: relative;
+        overflow: hidden;
+        border-radius: 5px;
+    }
+
+    media screen and (max-width: 600px) {
+        .video-grid, .chat-container
+
+    {
+        width: 100%;
+        height: auto;
+    }
+
+    .video-grid video {
+        width: 100%;
+        height: auto;
+    }
+
+    }
+
+    .message {
+        word-wrap: break-word; /* This property ensures that long words or URLs don't overflow the container */
+        max-width: 100%; /* Ensures that the message doesn't exceed the width of its container */
+    }
+
+
+    .chat-container {
+        max-width: 600px;
+        margin: auto;
+    }
+
+    .button-container {
+        width: 100%;
+        background-color: #f0f0f0;
+        position: relative;
+        overflow: hidden;
+        border-radius: 5px;
+    }
+
+    .button-container {
+        max-width: 600px;
+        margin: auto;
+    }
+
+    .chat-box {
+        max-height: 300px; /* Đặt chiều cao tối đa để kích thước thanh cuộn xuất hiện */
+        overflow-y: auto; /* Hiển thị thanh cuộn khi nội dung vượt quá chiều cao */
+        margin-bottom: 20px;
+    }
+    /* CSS for the chat box */
+    .chat-box {
+        height: 200px; /* Set a fixed height or adjust as needed */
+        overflow-y: auto;
+        border-radius: 5px;
+    }
+
+    .user-message {
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+        border-radius: 5px;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+
+    .bot-message {
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        border-radius: 5px;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+
+    .input-group {
+        margin-top: 20px;
+    }
+
+    /* Add Bootstrap custom-select styles */
+    .custom-select {
+        display: block;
+        width: 100%;
+        padding: 0.375rem 2.25rem 0.375rem 0.75rem;
+        line-height: 1.5;
+        color: #495057;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+
+        .custom-select:focus {
+            border-color: #80bdff;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+        .custom-select::before {
+            position: absolute;
+            top: 50%;
+            right: 0.75rem;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            content: '';
+            border-top: 0.3em solid;
+            border-right: 0.3em solid transparent;
+            border-bottom: 0.3em solid;
+        }
+
+        .custom-select[disabled] {
+            background-color: #e9ecef;
+            color: #495057;
+            pointer-events: none;
+            cursor: not-allowed;
+        }
+
+         .custom-select[disabled]::before {
+             display: none;
+         }
+
+    .notificationSound {
+        display: none;
+    }
+
+
+</style>
+<div class="text-center">
+    <div class="video-grid" id='video-grid' video-gird>
+
+    </div>
+    <div class="row">
+        <div class="col-md-4">
+        </div>
+        <div class="col-md-4" style="border-radius: 5px; background-color: #f0f0f0;">
+            <button class="btn btn-outline-info m-2" id="toggleVideoButton" onclick="toggleVideo()">
+                <i id="videoIcon" class="bi bi-camera-video-fill"></i>
+            </button>
+
+            <button class="btn btn-outline-info m-2" id="toggleAudioButton" onclick="toggleAudio()">
+                <i id="audioIcon" class="bi bi-mic"></i>
+            </button>
+            <button class="btn btn-outline-info m-2" id="shareScreenButton" onclick="shareScreen()">
+                <i id="shareScreenIcon" class="bi bi-display"></i>
+            </button>
+      
+            <a class="btn btn-outline-danger m-2" onclick="leaveRoom(ROOMID)">
+                <i class="bi bi-telephone-x"></i> 
+            </a>
+
+            <a id="shareButton" class="btn btn-outline-danger m-2">
+                <i class="bi bi-share-fill"></i> 
+            </a>
+
+            <script>
+                document.getElementById('shareButton').addEventListener('click', function () {
+                    // Lấy đường dẫn URL của trang web
+                    const urlToCopy = window.location.href;
+
+                    // Tạo một input ẩn để chứa giá trị cần copy
+                    const tempInput = document.createElement('input');
+                    tempInput.value = urlToCopy;
+                    document.body.appendChild(tempInput);
+
+                    // Chọn và copy giá trị vào clipboard
+                    tempInput.select();
+                    document.execCommand('copy');
+
+                    // Loại bỏ input ẩn khỏi DOM
+                    document.body.removeChild(tempInput);
+
+                    // Thông báo cho người dùng rằng đã copy thành công (có thể thay đổi thành thông báo khác)
+                    alert('Đường dẫn đã được sao chép thành công!');
+                });
+            </script>
+        </div>
+        <div class="col-md-4">
+        </div>
+    </div>
+
+
+    <!-- HTML -->
+    <div class="container mt-2 chat-container">
+        <div class="chat-box">
+            <!-- Chat messages go here -->
+        </div>
+    </div>
+    <div class="container button-container">
+
+        <div class="row">
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <select id="emojiSelect" class="custom-select">
+                        <!-- Emoji options will be added dynamically here -->
+                    </select>
+                </div>
+                <input id="messageInput" class="form-control" placeholder="Nhập tin nhắn ở đây..." type="text" />
+                <div class="input-group-append">
+                    <button id="sendButton" class="btn btn-outline-success" type="button"><i class="bi bi-send-fill"></i></button>
+                    <button class="btn btn-outline-info" id="NotificationButton" onclick="toggleNotifi()">
+                        <i class="bi bi-bell"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- JavaScript -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var emojiSelect = document.getElementById("emojiSelect");
+
+            // List of emojis
+            var emojis = ["❤️", "👍", "😊", "😂", "🔥", "🎉", "🚀", "🌈", "🍕", "🍦", "🎈", "🎁", "🍔", "🍟", "🌍", "🚗", "🏆", "⌛", "💡", "📱", "🎵", "🏖️", "⚽", "🎮", "📚", "🍎", "🍭", "☕", "🍻", "🌺", "🌙", "💤", "💪", "💔", "👋", "🙌", "🍇", "🌟", "👑", "💎", "🎀", "🚢", "🚁", "🚲", "🍓", "🍒", "🍍", "🍌", "🍊", "🍋", "🍉", "🍈", "🍏", "🥑", "🍆", "🍅", "🌽", "🍠", "🍤", "🍥", "🍣", "🍢", "🍡", "🍦", "🍧", "🍨", "🍩", "🍪", "🎂", "🍰", "🧁", "🍫", "🍬", "🍭", "🍮", "🍯", "🍩", "☕", "🍵", "🍶", "🍷", "🍸", "🍹", "🍺", "🍻", "🥂", "🥃", "🥤"];
+
+            // Shuffle emojis randomly
+            emojis = shuffleArray(emojis);
+
+            emojis.forEach(function (emoji) {
+                var option = document.createElement("option");
+                option.value = emoji;
+                option.text = emoji;
+                emojiSelect.add(option);
+            });
+            // Add click event to insert selected emoji into the text input
+            emojiSelect.addEventListener("change", function () {
+                var selectedEmoji = emojiSelect.value;
+                messageInput.value += selectedEmoji;
+            });
+        });
+
+        // Shuffle array function
+        function shuffleArray(array) {
+            for (var i = array.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+    </script>
+</div>
+
+<script src="~/js/signalr/dist/browser/signalr.min.js"></script>
+<script src="~/js/signalr/dist/browser/signalr.js"></script>
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
+<script>
+    // Variable to track the state of video and audio
+    let isScreenSharing = false;
+    let isLocalAudioEnabled = true;
+    let isLocalVideoEnabled = true;
+    let name = "";
+    while (!name.trim()) {
+        name = prompt("Nhập tên của bạn:");
+    }
+
+
+    if (name === null || !name.trim() || name === "") {
+        // Người dùng đã bấm "Hủy" hoặc nhập tên không hợp lệ
+        window.location.href = "/home/index";
+    } else {
+        // Người dùng đã nhập tên hợp lệ, tiếp tục xử lý tên
+        console.log("Tên của bạn là: " + name);
+        // Thực hiện các bước xử lý khác nếu cần
+    }
+
+    // Mã phòng
+    const ROOMID = '@ViewData["RoomId"]'
+    // user id
+    let UserIdmaster = '@ViewData["RoomId"]';
+    let UserId = null;
+    let localstream = null;
+    const Peers = {};
+    // Kết nối tới signalR
+    var connection = new signalR.HubConnectionBuilder()
+        .withUrl("/meethup")
+        .build();
+    // tạo mới 1 đối tượng Peer
+    var peer = new Peer();
+    peer.on('open', id => {
+        UserId = id;
+        const startSignalR = async () => {
+            await connection.start();
+            await connection.invoke("JoinMeetting", ROOMID, UserId, name);
+        }
+        startSignalR();
+    })
+
+    const videocontainer = document.querySelector('[video-gird]');
+    const myVideo = document.createElement('video');
+    // Add event listener for double-click on userVideo
+    myVideo.addEventListener('dblclick', function () {
+        // Toggle 'fullscreen' class for myVideo
+        if (myVideo.classList.contains('fullscreen')) {
+            myVideo.classList.remove('fullscreen');
+        } else {
+            myVideo.classList.add('fullscreen');
+        }
+    });
+    // Cần quyền truy cập vào mảy ảnh và mic
+    navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: true
+    }).then(stream => {
+        // nếu cho phép thì hiện video và tiếng
+        addVideoStream(myVideo, stream)
+        localstream = stream
+        toggleAudio();
+        toggleVideo();  
+    })
+    // Kih user join vao phòng
+    connection.on('user-connected-meet', (id, name) => {
+        toastr.info(name + ' đã vào phòng', 'Thông báo', {
+            closeButton: true,
+            progressBar: true,
+            positionClass: 'toast-top-right',
+            timeOut: 3000 // Thời gian hiển thị toast (ms)
+        });
+        playNotificationSound();
+        if (UserId === id) return;
+        connectNewUser(id, localstream)
+    })
+    // Khi user thoát khỏi phòng
+    connection.on('user-disconneted-meet', (id, name) => {
+        // Check if the received ConnectionId matches the current client's ConnectionId
+        if (UserId === id) {
+            toastr.info('Bạn đã rời khỏi phòng', 'Thông báo', {
+                closeButton: true,
+                progressBar: true,
+                positionClass: 'toast-top-right',
+                timeOut: 2000 // Thời gian hiển thị toast (ms)
+            });
+            // Redirect to the desired page
+            window.location.href = '/Home/index';
+        } else {
+            // Do something else if needed
+            toastr.info(name+' đã rời khỏi phòng', 'Thông báo', {
+                closeButton: true,
+                progressBar: true,
+                positionClass: 'toast-top-right',
+                timeOut: 3000 // Thời gian hiển thị toast (ms)
+            });
+
+        }
+
+        if (Peers[id]) {
+            Peers[id].close();
+            delete Peers[id];
+        }
+        console.log(Peers);
+    });
+
+    connection.on("cannot-join-meet", function (connectionId, message) {
+        // Check if the received ConnectionId matches the current client's ConnectionId
+        if (connectionId === connection.connectionId) {
+            alert(message);
+            window.location.href = '/Home/index';
+        }
+    });
+
+
+    // Lấy tham chiếu đến trường nhập tin nhắn và nút Gửi
+    var messageInput = document.getElementById("messageInput");
+    var sendButton = document.getElementById("sendButton");
+
+    // Bắt sự kiện khi nhấn phím Enter
+    messageInput.addEventListener("keyup", function (event) {
+        // Kiểm tra xem phím nhấn có phải là phím Enter không (keyCode 13)
+        if (event.keyCode === 13) {
+            // Gọi hàm xử lý khi nhấn Enter (ví dụ: gửi tin nhắn)
+            sendMessage();
+        }
+    });
+
+    $(document).ready(function () {
+
+        $("#sendButton").click(function () {
+            sendMessage();
+        });
+    });
+
+    // Hàm xử lý để gửi tin nhắn
+    function sendMessage() {
+        var message = $("#messageInput").val();
+        if (message != "") {
+            // Call the server-side method to send a message
+            connection.invoke("SendMessageToRoom", ROOMID, UserId, message).catch(function (err) {
+                return console.error(err.toString());
+            });
+        }
+
+        // Clear the message input
+        $("#messageInput").val("");
+    }
+
+    const updateVideoButtonUI = () => {
+        const videoIcon = document.getElementById('videoIcon');
+        videoIcon.className = isLocalVideoEnabled ? 'bi bi-camera-video-fill' : 'bi bi-camera-video-off-fill';
+    };
+
+    // Update audio button UI
+    const updateAudioButtonUI = () => {
+        const audioIcon = document.getElementById('audioIcon');
+        audioIcon.className = isLocalAudioEnabled ? 'bi bi-mic' : 'bi bi-mic-mute';
+    };
+
+    const updateShareButtonUI = () => {
+        const audioIcon = document.getElementById('audioIcon');
+        audioIcon.className = isLocalAudioEnabled ? 'bi bi-mic' : 'bi bi-mic-mute';
+    };
+
+    // Toggle video function
+    const toggleVideo = () => {
+
+
+        const videoTracks = localstream.getVideoTracks();
+
+        if (videoTracks.length > 0) {
+            videoTracks[0].enabled = !videoTracks[0].enabled;
+            isLocalVideoEnabled = videoTracks[0].enabled;
+            console.log(isLocalVideoEnabled);
+            updateVideoButtonUI();
+        } else {
+            console.error('No video tracks found in the local stream.');
+        }
+    };
+
+    // Toggle audio function
+    const toggleAudio = () => {
+
+        const audioTracks = localstream.getAudioTracks();
+
+        if (audioTracks.length > 0) {
+            audioTracks[0].enabled = !audioTracks[0].enabled;
+            isLocalAudioEnabled = audioTracks[0].enabled;
+            console.log(isLocalAudioEnabled);
+            updateAudioButtonUI();
+        } else {
+            console.error('No audio tracks found in the local stream.');
+        }
+    };
+
+    connection.on('user-toggled-video', (userId, isEnabled) => {
+        if (Peers[userId]) {
+            Peers[userId].isVideoEnabled = isEnabled;
+        }
+    });
+
+
+    // Handle the incoming message from the server
+    connection.on("ReceiveMessage", function (user, message, name) {
+        var chatBox = $(".chat-box"); // Assuming ".chat-box" is the container for chat messages
+
+        var messageElement = $("<div></div>").addClass("message");
+
+        if (user === UserId) {
+            messageElement.addClass("user-message");
+            messageElement.html(`<strong>Bạn: </strong> ` + message);
+        } else {
+            messageElement.addClass("bot-message");
+            messageElement.html(`<strong>${name}: </strong> ` + message);
+            playNotificationSound();
+        }
+
+        chatBox.append(messageElement);
+    });
+
+    const connectNewUser = (userId, localStream) => {
+        const userVideo = document.createElement('video');       
+        // Add event listener for double-click on userVideo
+        userVideo.addEventListener('dblclick', function () {
+            // Toggle 'fullscreen' class for myVideo
+            if (userVideo.classList.contains('fullscreen')) {
+                userVideo.classList.remove('fullscreen');
+            } else {
+                userVideo.classList.add('fullscreen');
+            }
+        });
+
+        const call = peer.call(userId, localstream);
+        
+        call.isVideoEnabled = true; // Mặc định là bật video
+
+        call.on('stream', userVideostream => {
+            currentPeer = call.peerConnection;
+            addVideoStream(userVideo, userVideostream);
+            if (!call.isVideoEnabled) {
+                userVideo.style.display = 'none';
+            }
+        });
+
+        call.on('close', () => {
+            userVideo.remove();
+        });
+
+        Peers[userId] = call;
+    };
+
+    peer.on('call', call => {
+        call.answer(localstream);
+        call.isVideoEnabled = true; // Mặc định là bật video
+        const userVideo = document.createElement('video');
+        // Add event listener for double-click on userVideo
+        userVideo.addEventListener('dblclick', function () {
+            // Toggle 'fullscreen' class for myVideo
+            if (userVideo.classList.contains('fullscreen')) {
+                userVideo.classList.remove('fullscreen');
+            } else {
+                userVideo.classList.add('fullscreen');
+            }
+        });
+        call.on('stream', uservieostream => {
+            addVideoStream(userVideo, uservieostream);
+            currentPeer = call.peerConnection;
+            if (!call.isVideoEnabled) {
+                userVideo.style.display = 'none';
+            }
+        });
+        //Peers[UserId] = call;
+        Peers[call.peer] = call;
+        console.log(Peers);
+
+    });
+
+    connection.on('user-toggled-video', (userId, isEnabled) => {
+        if (userId === UserId) {
+            isLocalVideoEnabled = isEnabled;
+            myVideo.style.display = isEnabled ? 'block' : 'none';
+        }
+    });
+
+    connection.on("user-leavemeet", function (connectionId, name) {
+        // Check if the received ConnectionId matches the current client's ConnectionId
+        if (connectionId === connection.connectionId) {
+            // Redirect to the desired page
+            window.location.href = '/Home/index';
+            return;
+        }
+        // Do something else if needed
+        toastr.info(name+' đã rời khỏi phòng', 'Thông báo', {
+            closeButton: true,
+            progressBar: true,
+            positionClass: 'toast-top-right',
+            timeOut: 3000 // Thời gian hiển thị toast (ms)
+        });
+    });
+
+    connection.on("user-sharecreen", function (userId, name, isShare) {
+        playNotificationSound();
+        // Check if the received ConnectionId matches the current client's ConnectionId
+        if (UserId === userId) {
+            if (isShare){
+                // Redirect to the desired page
+                toastr.info('Bạn đã chia sẽ màn hình', 'Thông báo', {
+                    closeButton: true,
+                    progressBar: true,
+                    positionClass: 'toast-top-right',
+                    timeOut: 3000 // Thời gian hiển thị toast (ms)
+                });
+            }else{
+                // Redirect to the desired page
+                toastr.info('Bạn đã tắt chia sẽ màn hình', 'Thông báo', {
+                    closeButton: true,
+                    progressBar: true,
+                    positionClass: 'toast-top-right',
+                    timeOut: 3000 // Thời gian hiển thị toast (ms)
+                });
+            }
+            return;
+        }
+        if (isShare){
+            // Do something else if needed
+            toastr.info(name + ' đang chia sẽ màn hình', 'Thông báo', {
+                closeButton: true,
+                progressBar: true,
+                positionClass: 'toast-top-right',
+                timeOut: 3000 // Thời gian hiển thị toast (ms)
+            });
+        }
+       else{
+            // Do something else if needed
+            toastr.info(name + ' đã tắt chia sẽ màn hình', 'Thông báo', {
+                closeButton: true,
+                progressBar: true,
+                positionClass: 'toast-top-right',
+                timeOut: 3000 // Thời gian hiển thị toast (ms)
+            });
+       }
+    });
+
+    // Gọi hàm JoinQueue khi bấm nút "Tìm kiếm người ấy"
+    async function leaveRoom(roomid) {
+        if (connection.state !== "Connected") {
+            // Nếu kết nối chưa được thiết lập, hãy thiết lập nó trước khi gọi hàm
+            await startConnection();
+        }
+
+        await connection.invoke("LeaveMeet", roomid).then(function () {
+        }).catch(function (err) {
+            console.error(err.toString());
+        }).finally(function () {
+        });
+    }
+
+    // Function to initiate screen sharing
+    const shareScreen = async () => {
+        try {
+            if (isScreenSharing === false) {
+                // Request permission to share the screen
+                const screenStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: true,
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true
+                    }
+                });
+                // Iterate through all connected peers and replace their video track
+                for (const peerId in Peers) {
+                    const peerConnection = Peers[peerId].peerConnection;
+                    const sender = peerConnection.getSenders().find((s) => s.track.kind === 'video');
+                    sender.replaceTrack(screenStream.getVideoTracks()[0]);
+                }
+                if (connection.state !== "Connected") {
+                    // Nếu kết nối chưa được thiết lập, hãy thiết lập nó trước khi gọi hàm
+                    await startConnection();
+                }
+                // Invoke the "ShareScreen" method with your signaling mechanism (connection.invoke)
+                await connection.invoke("ShareScreen", ROOMID, true);
+                // Handle the onended event for screen sharing
+                screenStream.getVideoTracks()[0].onended = async function () {
+               
+                    await stopShare();
+                };
+
+                // Update button appearance
+                updateButtonAppearance(true);
+                isScreenSharing = true;
+            } else {
+                // Handle the onended event for screen sharing
+                await stopShare();
+                // Update button appearance
+                updateButtonAppearance(false);
+                isScreenSharing = false;
+            }
+            console.log(isScreenSharing);
+
+            // Toggle the screen sharing state
+        } catch (error) {
+            // Handle errors
+            toastr.info('Lỗi khi đang chia sẽ màn hình:' + error, 'Thông báo', {
+                closeButton: true,
+                progressBar: true,
+                positionClass: 'toast-top-right',
+                timeOut: 3000
+            });
+        }
+
+        // dừng chia sẽ màn hình
+        async function stopShare()  {
+            let videotrack = localstream.getVideoTracks()[0];      
+            // Iterate through all connected peers and replace their video track
+            if (Peers != null){
+                for (const peerId in Peers) {
+                    const peerConnection = Peers[peerId].peerConnection;
+                    const sender = peerConnection.getSenders().find((s) => s.track.kind === videotrack.kind);
+                    sender.replaceTrack(videotrack);
+                }
+            }else{
+                var currentpeer = Peers[peerId].peerConnection;
+                const sender = currentpeer.getSender().find((s) => s.track.kind === videotrack.kind);
+                sender.replaceTrack(videotrack);
+            }
+            if (connection.state !== "Connected") {
+                // Nếu kết nối chưa được thiết lập, hãy thiết lập nó trước khi gọi hàm
+                await startConnection();
+            }
+            await connection.invoke("ShareScreen", ROOMID, false);
+
+            // Update button appearance
+            updateButtonAppearance(false);
+            // Toggle the screen sharing state
+            isScreenSharing = false;
+        }
+    };
+    const addVideoStream = (video, stream) => {
+        video.srcObject = stream;
+        video.addEventListener('loadedmetadata', () => {
+            video.play()
+        })
+        videocontainer.appendChild(video)
+    }
+    // Function to update button appearance based on the screen sharing state
+    function updateButtonAppearance(isSharing) {
+        const shareScreenButton = document.getElementById('shareScreenButton');
+        const shareScreenIcon = document.getElementById('shareScreenIcon');
+
+        if (isSharing) {
+            // Change button color to red
+            shareScreenButton.classList.add('btn-danger');
+            shareScreenButton.classList.remove('btn-outline-info');
+
+            // Change icon to a red icon (you need to provide the class for a red icon)
+            shareScreenIcon.classList.add('red-icon-class');
+            shareScreenIcon.classList.remove('bi-display');
+        } else {
+            // Change button color back to the original
+            shareScreenButton.classList.remove('btn-danger');
+            shareScreenButton.classList.add('btn-outline-info');
+
+            // Change icon back to the original
+            shareScreenIcon.classList.remove('red-icon-class');
+            shareScreenIcon.classList.add('bi-display');
+        }
+    }
+    // Function to toggle mute/unmute
+    function toggleNotifi() {
+        var notificationSound = document.getElementById("notificationSound");
+
+        // Toggle the 'muted' property
+        notificationSound.muted = !notificationSound.muted;
+
+        // Optionally, update the button appearance based on mute state
+        updateButtonNotiAppearance(notificationSound.muted);
+    }
+
+    // Function to update button appearance based on mute state
+    function updateButtonNotiAppearance(isMuted) {
+        var buttonIcon = document.querySelector("#NotificationButton i");
+        if (isMuted) {
+            buttonIcon.classList.remove("bi-bell");
+            buttonIcon.classList.add("bi-bell-slash", "text-danger");
+        } else {
+            buttonIcon.classList.remove("bi-bell-slash", "text-danger");
+            buttonIcon.classList.add("bi-bell");
+        }
+    }
+</script>
+<script src="http://ajax.microsoft.com/ajax/jquery/jquery-1.10.2.js" type="text/javascript"></script>
